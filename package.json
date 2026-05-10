@@ -27,7 +27,7 @@
     "darwin"
   ],
   "bin": {
-    "plaipin": "./dist/cli/index.js"
+    "plaipin": "dist/cli/index.js"
   },
   "exports": {
     "./package.json": "./package.json"
