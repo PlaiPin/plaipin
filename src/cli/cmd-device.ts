@@ -473,7 +473,7 @@ async function runUsbFlow(
         console.log(ok(`Device came online with the new token (setToken ack was lost but firmware had already committed before disconnect)`));
       }
       pln();
-      pln(color.emphasis("Try it: open Codex, send a message, watch the pet."));
+      pln(color.emphasis("Try it: open Codex, send a message, watch your pet come alive!"));
       return;
     }
 
@@ -558,7 +558,7 @@ async function runWirelessFlow(name: string, code: string): Promise<void> {
   try {
     await waitForConnect(name, 30_000);
     pln();
-    pln(color.emphasis("Try it: open Codex, send a message, watch the pet."));
+    pln(color.emphasis("Try it: open Codex, send a message, watch your pet come alive!"));
   } catch {
     process.exitCode = 1;
   }

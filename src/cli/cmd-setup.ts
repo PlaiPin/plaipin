@@ -90,9 +90,9 @@ export async function cmdSetup(opts: SetupOpts): Promise<void> {
   const allPass = await runDoctor();
   pln();
   if (allPass) {
-    console.log(ok(color.emphasis("Setup complete.")));
+    console.log(ok(color.emphasis("Setup complete — your pet's home is ready!")));
     pln("Try " + color.action("plaipin tail") + " to see live events from Codex.app.");
-    pln("Pair an ESP32 with " + color.action("plaipin device add <name>") + " (USB-CDC).");
+    pln("Pair an ESP32 with " + color.action("plaipin device add <name>") + " to wake your pet.");
   } else {
     console.log(warn(color.emphasis("Setup partially complete — some checks failed (see above).")));
     pln("The daemon is still running. Re-run " + color.action("plaipin doctor") +
