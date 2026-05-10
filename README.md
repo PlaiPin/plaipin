@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/plaipin"><img alt="npm version" src="https://img.shields.io/npm/v/plaipin"></a>
   <a href="https://github.com/PlaiPin/plaipin/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/PlaiPin/plaipin/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/PlaiPin/plaipin/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/npm/l/plaipin"></a>
+  <a href="https://github.com/PlaiPin/plaipin/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/PlaiPin/plaipin"></a>
   <a href="https://github.com/PlaiPin/plaipin/blob/main/package.json"><img alt="node version" src="https://img.shields.io/node/v/plaipin"></a>
   <a href="#requirements"><img alt="platform: macOS" src="https://img.shields.io/badge/platform-macOS-lightgrey"></a>
   <a href="#status"><img alt="status: pre-alpha" src="https://img.shields.io/badge/status-pre--alpha-orange"></a>
