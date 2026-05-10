@@ -49,7 +49,7 @@
     "spike:multiclient": "tsx scripts/spikes/multiclient-app-server.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "prepack": "npm run build",
-    "test": "PLAIPIN_UNREAD_AUTO_CLEAR_MS=200 node --import tsx --test 'src/**/*.test.ts'",
+    "test": "PLAIPIN_UNREAD_AUTO_CLEAR_MS=200 node --import tsx --test $(find src -name '*.test.ts')",
     "fmt": "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\""
   },
   "dependencies": {
