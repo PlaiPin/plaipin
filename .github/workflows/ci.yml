@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ts:
+    name: TypeScript build & test
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck (prod + test)
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Pack smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          pack_json="$(npm pack --dry-run --json)"
+          printf '%s\n' "$pack_json"
+          printf '%s\n' "$pack_json" | node -e '
+            const fs = require("node:fs");
+            const data = JSON.parse(fs.readFileSync(0, "utf8"))[0];
+            const files = new Set(data.files.map((f) => f.path));
+            const required = [
+              "package.json",
+              "README.md",
+              "LICENSE",
+              "NOTICE",
+              "dist/cli/index.js",
+              "shim/codex-shim.sh",
+              "shim/codex-shim-bridge.js",
+              "docs/assets/plaipin-banner.svg",
+            ];
+            for (const path of required) {
+              if (!files.has(path)) {
+                throw new Error(`missing from npm pack: ${path}`);
+              }
+            }
+            if ([...files].some((path) => path.endsWith(".tgz") || path.includes(".DS_Store"))) {
+              throw new Error("pack contains local artifact");
+            }
+          '
+          npm pack --json > /tmp/plaipin-pack.json
+          tarball="$(node -e 'const fs=require("node:fs"); console.log(JSON.parse(fs.readFileSync("/tmp/plaipin-pack.json", "utf8"))[0].filename)')"
+          tmp="$(mktemp -d)"
+          npm install --global --prefix "$tmp" "./$tarball"
+          "$tmp/bin/plaipin" --help

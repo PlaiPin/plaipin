@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+# Once a Discussions tab or chat channel exists, add it here so the issue picker
+# routes non-bug questions away from the issue tracker. Example:
+#
+# contact_links:
+#   - name: Questions and discussion
+#     url: https://github.com/PlaiPin/plaipin/discussions
+#     about: For questions and general conversation, please use Discussions.

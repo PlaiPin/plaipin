@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400" font-family="&#39;Space Grotesk&#39;, system-ui, sans-serif">
+  <defs>
+    <filter id="h3a-noise" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="11"></feTurbulence>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"></feColorMatrix>
+    </filter>
+    <pattern id="h3a-hazard" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="16" height="32" fill="#0E0D0B"></rect>
+      <rect x="16" width="16" height="32" fill="#D9FF3D"></rect>
+    </pattern>
+    <pattern id="h3a-grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M0 0 H24 M0 0 V24" stroke="#0E0D0B" stroke-width="0.5" opacity="0.18"></path>
+    </pattern>
+    <pattern id="h3a-dots" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="1.4" fill="#0E0D0B"></circle>
+    </pattern>
+    <pattern id="h3a-dots-dense" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.1" fill="#0E0D0B"></circle>
+    </pattern>
+    <path id="h3a-circ" d="M 0,-128 a 128,128 0 1,1 -0.01,0"></path>
+    <clipPath id="h3a-disk"><circle r="116"></circle></clipPath>
+  </defs>
+
+  <rect width="1280" height="400" fill="#F2EEE3"></rect>
+  <rect width="1280" height="400" fill="url(#h3a-grid)"></rect>
+  <rect width="1280" height="400" fill="#000" filter="url(#h3a-noise)" opacity="0.08"></rect>
+
+  <rect x="0" y="0" width="1280" height="40" fill="url(#h3a-hazard)"></rect>
+  <line x1="0" y1="40" x2="1280" y2="40" stroke="#0E0D0B" stroke-width="2"></line>
+  <rect x="0" y="364" width="1280" height="36" fill="url(#h3a-hazard)"></rect>
+  <line x1="0" y1="364" x2="1280" y2="364" stroke="#0E0D0B" stroke-width="2"></line>
+
+  <g font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-size="11" letter-spacing="1.6" fill="#0E0D0B">
+    <text x="32" y="64">// FIELD KIT — NO.087</text>
+    <text x="1248" y="64" text-anchor="end">2.4 GHz · ESP32 · ONLINE</text>
+  </g>
+
+  <g transform="translate(56,80)">
+    <text y="118" font-weight="700" font-size="148" letter-spacing="-5.5" fill="#0E0D0B">plaipin</text>
+    <rect x="2" y="148" width="556" height="12" fill="#D9FF3D"></rect>
+    <g transform="translate(2,196)">
+      <text font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-size="20" letter-spacing="2" fill="#0E0D0B" font-weight="700">CODEX <tspan fill="#5A554D">// </tspan>ON YOUR DESK.</text>
+    </g>
+    <g transform="translate(2,228)" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-size="12" fill="#3A352D">
+      <text>An always-on AI agent that runs on a tiny board on your bench.</text>
+      <text y="18">Background daemon · pocket pets · explicit approvals.</text>
+    </g>
+    <g transform="translate(2,266)">
+      <g transform="rotate(-2 50 16)">
+        <rect width="100" height="32" fill="#0E0D0B"></rect>
+        <text x="50" y="22" text-anchor="middle" fill="#D9FF3D" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-size="13" font-weight="700" letter-spacing="2">DAEMON</text>
+      </g>
+      <g transform="translate(116,0) rotate(2 38 16)">
+        <rect width="76" height="32" fill="#D9FF3D" stroke="#0E0D0B" stroke-width="2"></rect>
+        <text x="38" y="22" text-anchor="middle" fill="#0E0D0B" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-size="13" font-weight="700" letter-spacing="2">PETS</text>
+      </g>
+      <g transform="translate(206,0) rotate(-1 70 16)">
+        <rect width="140" height="32" fill="#FFFFFF" stroke="#0E0D0B" stroke-width="2"></rect>
+        <text x="70" y="22" text-anchor="middle" fill="#0E0D0B" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-size="13" font-weight="700" letter-spacing="2">APPROVALS</text>
+      </g>
+    </g>
+  </g>
+
+  
+  <g transform="translate(1080,200)">
+    <circle r="138" fill="none" stroke="#0E0D0B" stroke-width="2" stroke-dasharray="4 6"></circle>
+    <circle r="118" fill="#FFFFFF" stroke="#0E0D0B" stroke-width="2"></circle>
+    <text font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-size="11" letter-spacing="6" fill="#0E0D0B">
+      <textPath href="#h3a-circ" startOffset="0">PLAIPIN · CODEX ON YOUR DESK · NO.087 · v1.2 · </textPath>
+    </text>
+
+    
+    <g clip-path="url(#h3a-disk)">
+      
+      <g transform="translate(-78,-89) scale(0.78)">
+        
+        <circle cx="100" cy="114" r="78" fill="url(#h3a-dots)" opacity="0.6"></circle>
+        
+        <path d="M62 16 Q 56 60 78 80 Q 92 62 90 26 Q 88 10 76 10 Q 66 10 62 16 Z" fill="#0E0D0B"></path>
+        <path d="M138 16 Q 144 60 122 80 Q 108 62 110 26 Q 112 10 124 10 Q 134 10 138 16 Z" fill="#0E0D0B"></path>
+        <path d="M70 28 Q 70 56 78 72 Q 84 60 82 30 Z" fill="#FFFFFF"></path>
+        <path d="M130 28 Q 130 56 122 72 Q 116 60 118 30 Z" fill="#FFFFFF"></path>
+        
+        <circle cx="100" cy="114" r="62" fill="#0E0D0B"></circle>
+        
+        <circle cx="106" cy="120" r="32" fill="#FFFFFF"></circle>
+        
+        <path d="M 106,88 A 32 32 0 0 1 106,152 A 32 32 0 0 1 138,120 Z" fill="url(#h3a-dots-dense)" opacity="0.55"></path>
+        
+        <rect x="98" y="110" width="7" height="20" rx="3.5" fill="#0E0D0B"></rect>
+        <rect x="116" y="110" width="7" height="20" rx="3.5" fill="#0E0D0B"></rect>
+      </g>
+    </g>
+
+    <circle cx="0" cy="-138" r="10" fill="#D9FF3D" stroke="#0E0D0B" stroke-width="2"></circle>
+  </g>
+
+  <rect x="1" y="1" width="1278" height="398" fill="none" stroke="#0E0D0B" stroke-width="2"></rect>
+</svg>

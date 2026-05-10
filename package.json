@@ -1,0 +1,72 @@
+{
+  "name": "plaipin",
+  "version": "0.0.1",
+  "description": "Mirror OpenAI Codex desktop sessions to an ESP32 device on your local network.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PlaiPin/plaipin.git"
+  },
+  "homepage": "https://github.com/PlaiPin/plaipin#readme",
+  "bugs": {
+    "url": "https://github.com/PlaiPin/plaipin/issues"
+  },
+  "keywords": [
+    "codex",
+    "esp32",
+    "openai",
+    "websocket",
+    "ambient-device",
+    "mirror"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "os": [
+    "darwin"
+  ],
+  "bin": {
+    "plaipin": "./dist/cli/index.js"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "docs/assets/plaipin-banner.svg",
+    "shim/codex-shim.sh",
+    "shim/codex-shim-bridge.js",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev:daemon": "tsx watch src/daemon/index.ts",
+    "dev:cli": "tsx src/cli/index.ts",
+    "spike:multiclient": "tsx scripts/spikes/multiclient-app-server.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "prepack": "npm run build",
+    "test": "PLAIPIN_UNREAD_AUTO_CLEAR_MS=200 node --import tsx --test 'src/**/*.test.ts'",
+    "fmt": "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\""
+  },
+  "dependencies": {
+    "bonjour-service": "^1.2.1",
+    "commander": "^12.1.0",
+    "ora": "^9.4.0",
+    "picocolors": "^1.1.1",
+    "pino": "^9.5.0",
+    "pino-pretty": "^11.3.0",
+    "serialport": "^12.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/ws": "^8.5.13",
+    "prettier": "^3.3.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

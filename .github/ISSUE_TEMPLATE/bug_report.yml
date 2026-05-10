@@ -1,0 +1,63 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report. Concrete reproduction steps and the
+        output of `plaipin doctor` are the two most useful things you can include.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect to happen, and what actually happened?
+      placeholder: |
+        Expected: ...
+        Actual: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `plaipin setup`
+        2. ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `plaipin doctor`
+      description: Captures daemon, hook, socket, and pairing-endpoint state in one shot.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: |
+        Please include:
+        - Output of `plaipin version`
+        - macOS version (e.g. 14.5, Apple Silicon vs Intel)
+        - Node version (`node --version`)
+        - ESP32 chip + firmware version, if a device is involved
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant lines from `~/.plaipin/logs/daemon.log` or terminal stderr. Redact anything sensitive (tokens, IPs, paths).
+      render: shell
+    validations:
+      required: false
