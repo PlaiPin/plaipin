@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Safe, ordered teardown. Order matters:
-//   1. Restore Codex.app's Info.plist FIRST (so Codex stops trying to spawn
-//      our shim).
+//   1. Unpatch Codex.app's Info.plist FIRST (so Codex stops trying to spawn
+//      our shim). Delegated to cmdHookCodex({disable:true}) so there's a
+//      single implementation of the plist surgery + codesign step.
 //   2. Unload the LaunchAgent and remove the plist.
 //   3. Remove ~/.plaipin/ (preserves pairings if --keep-state).
 //
@@ -12,18 +13,18 @@
 // `plaipin uninstall` exists specifically to prevent that footgun.
 
 import { execSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, copyFileSync, rmSync, unlinkSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, unlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import readline from "node:readline";
 import { PATHS } from "../shared/util.js";
+import { cmdHookCodex } from "./cmd-hook-codex.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const CODEX_APP = "/Applications/Codex.app";
 const CODEX_INFO_PLIST = join(CODEX_APP, "Contents/Info.plist");
-const BACKUP_INFO_PLIST = join(PATHS.state, "Info.plist.original");
 
 interface UninstallOpts {
   yes?: boolean;
@@ -49,7 +50,7 @@ export async function cmdUninstall(opts: UninstallOpts): Promise<void> {
 
   console.log("Will perform the following steps in order:");
   if (hookActive) {
-    console.log(`  1. Restore Codex.app/Contents/Info.plist (currently patched with CODEX_CLI_PATH)`);
+    console.log(`  1. Remove LSEnvironment.CODEX_CLI_PATH from Codex.app/Contents/Info.plist`);
     console.log(`     and ad-hoc re-sign Codex.app to keep Gatekeeper happy.`);
   }
   if (plistInstalled) {
@@ -71,29 +72,12 @@ export async function cmdUninstall(opts: UninstallOpts): Promise<void> {
     }
   }
 
-  // Step 1: hook-codex --disable
+  // Step 1: hook-codex --disable. Delegated to cmdHookCodex so the
+  // teardown logic lives in exactly one place (it surgically deletes
+  // :LSEnvironment:CODEX_CLI_PATH and re-signs — no whole-file restore).
   if (hookActive) {
-    console.log("\n=> Restoring Codex.app/Contents/Info.plist…");
-    if (existsSync(BACKUP_INFO_PLIST)) {
-      copyFileSync(BACKUP_INFO_PLIST, CODEX_INFO_PLIST);
-      console.log(`   restored from ${BACKUP_INFO_PLIST}`);
-    } else {
-      console.log("   no backup found — falling back to PlistBuddy delete of LSEnvironment:CODEX_CLI_PATH");
-      spawnSync(
-        "/usr/libexec/PlistBuddy",
-        ["-c", "Delete :LSEnvironment:CODEX_CLI_PATH", CODEX_INFO_PLIST],
-        { stdio: "inherit" },
-      );
-    }
-    console.log("=> Re-signing Codex.app (ad-hoc)…");
-    const cs = spawnSync("codesign", ["--force", "--deep", "--sign", "-", CODEX_APP], {
-      stdio: "inherit",
-    });
-    if (cs.status !== 0) {
-      console.warn(
-        "WARNING: codesign returned non-zero. Codex.app should still launch but may show a Gatekeeper prompt.",
-      );
-    }
+    console.log("");
+    await cmdHookCodex({ disable: true });
   }
 
   // Step 2: stop + remove LaunchAgent
@@ -144,10 +128,10 @@ export async function cmdUninstall(opts: UninstallOpts): Promise<void> {
 }
 
 function isHookActive(): boolean {
-  if (!existsSync(`${CODEX_APP}/Contents/Info.plist`)) return false;
+  if (!existsSync(CODEX_INFO_PLIST)) return false;
   const out = spawnSync(
     "/usr/libexec/PlistBuddy",
-    ["-c", "Print :LSEnvironment:CODEX_CLI_PATH", `${CODEX_APP}/Contents/Info.plist`],
+    ["-c", "Print :LSEnvironment:CODEX_CLI_PATH", CODEX_INFO_PLIST],
     { encoding: "utf8" },
   );
   return out.status === 0 && (out.stdout ?? "").trim().length > 0;

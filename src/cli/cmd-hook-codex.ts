@@ -4,6 +4,12 @@
 // Patch (or unpatch) /Applications/Codex.app/Contents/Info.plist with
 // LSEnvironment.CODEX_CLI_PATH pointing to our shim, then ad-hoc re-sign.
 //
+// We only ever read or write the one key we own (:LSEnvironment:CODEX_CLI_PATH).
+// Snapshotting and restoring the whole Info.plist would clobber Codex-owned
+// data — most importantly ElectronAsarIntegrity, whose hash is updated by
+// Codex's auto-updater every time app.asar changes. Restoring a stale
+// snapshot causes Electron's asar integrity check to fail at launch.
+//
 // macOS 13+ requires "App Management" privacy permission for the parent
 // process (Terminal/iTerm/etc.) to modify other apps' bundles in
 // /Applications/. If that's not granted, PlistBuddy and codesign fail
@@ -11,14 +17,13 @@
 // leaving the system in a half-patched state.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, copyFileSync, unlinkSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { PATHS } from "../shared/util.js";
 
 const CODEX_APP = "/Applications/Codex.app";
 const INFO_PLIST = join(CODEX_APP, "Contents/Info.plist");
 const SHIM_PATH = join(PATHS.bin, "codex-shim");
-const BACKUP_INFO_PLIST = join(PATHS.state, "Info.plist.original");
 
 interface HookOpts {
   enable?: boolean;
@@ -41,47 +46,45 @@ function enableHook(): void {
     fail(`shim not installed at ${SHIM_PATH}; run: plaipin install`);
   }
 
-  // Backup Info.plist if we don't already have one. We make the backup BEFORE
-  // any write attempts so disableHook() can always restore. If we then fail
-  // mid-patch, we delete the backup so we don't lie about hook state to the
-  // doctor command (which checks for Info.plist:LSEnvironment:CODEX_CLI_PATH
-  // — not the backup file).
-  const createdBackupThisRun = !existsSync(BACKUP_INFO_PLIST);
-  if (createdBackupThisRun) {
-    copyFileSync(INFO_PLIST, BACKUP_INFO_PLIST);
-    console.log(`=> Backup → ${BACKUP_INFO_PLIST}`);
-  }
-
   // Helper: run PlistBuddy capturing stderr so we can detect TCC denial.
   const plistbuddy = (cmd: string): { ok: boolean; stderr: string } => {
     const r = spawnSync("/usr/libexec/PlistBuddy", ["-c", cmd, INFO_PLIST], { encoding: "utf8" });
     return { ok: r.status === 0, stderr: (r.stderr ?? "").trim() };
   };
 
-  // Idempotent delete (may legitimately fail if key absent — ignore that)
-  plistbuddy("Delete :LSEnvironment");
-
   console.log(`=> Setting LSEnvironment.CODEX_CLI_PATH = ${SHIM_PATH}`);
+
+  // Idempotent: drop only our own key first so the Add below always works,
+  // even on a partially-patched plist. Ignore "Does Not Exist" — bail on TCC.
+  const delKey = plistbuddy("Delete :LSEnvironment:CODEX_CLI_PATH");
+  if (!delKey.ok && /Operation not permitted/i.test(delKey.stderr)) {
+    return abortAndCleanup(delKey.stderr, "PlistBuddy");
+  }
+
+  // Add the parent dict if it doesn't already exist. We must not touch any
+  // other keys inside LSEnvironment — they may belong to Codex or the user.
   const addDict = plistbuddy("Add :LSEnvironment dict");
   if (!addDict.ok && /Operation not permitted/i.test(addDict.stderr)) {
-    return abortAndCleanup(createdBackupThisRun, addDict.stderr, "PlistBuddy");
+    return abortAndCleanup(addDict.stderr, "PlistBuddy");
   }
   if (!addDict.ok && !/already exists/i.test(addDict.stderr)) {
-    return abortAndCleanup(createdBackupThisRun, addDict.stderr, "PlistBuddy");
-  }
-  const addKey = plistbuddy(`Add :LSEnvironment:CODEX_CLI_PATH string ${SHIM_PATH}`);
-  if (!addKey.ok) {
-    return abortAndCleanup(createdBackupThisRun, addKey.stderr, "PlistBuddy");
+    return abortAndCleanup(addDict.stderr, "PlistBuddy");
   }
 
-  // Ad-hoc re-sign to keep Gatekeeper happy.
+  const addKey = plistbuddy(`Add :LSEnvironment:CODEX_CLI_PATH string ${SHIM_PATH}`);
+  if (!addKey.ok) {
+    return abortAndCleanup(addKey.stderr, "PlistBuddy");
+  }
+
+  // Ad-hoc re-sign the outer bundle. No --deep: editing Info.plist only
+  // invalidates the bundle's own signature, not the nested helpers/framework.
   console.log("=> Re-signing (ad-hoc)…");
-  const sign = spawnSync("codesign", ["--force", "--deep", "--sign", "-", CODEX_APP], {
+  const sign = spawnSync("codesign", ["--force", "--sign", "-", CODEX_APP], {
     encoding: "utf8",
   });
   if (sign.status !== 0) {
     if (/Operation not permitted/i.test(sign.stderr ?? "")) {
-      return abortAndCleanup(createdBackupThisRun, sign.stderr ?? "", "codesign");
+      return abortAndCleanup(sign.stderr ?? "", "codesign");
     }
     console.warn("WARNING: codesign returned non-zero. Codex.app may show a Gatekeeper prompt:");
     if (sign.stderr) console.warn(sign.stderr.trim());
@@ -94,35 +97,18 @@ function enableHook(): void {
 
 /**
  * The patch failed partway through (most commonly: TCC App Management
- * denial). Restore the bundle to its pre-plaipin state and remove the
- * backup we just created so doctor reports an honest "not hooked" state.
+ * denial). Best-effort: try to remove our key so the bundle isn't left
+ * in a half-patched state. If the failure was TCC we won't have write
+ * access anyway — print the App Management help so the user can fix it.
  */
-function abortAndCleanup(createdBackupThisRun: boolean, stderr: string, tool: string): void {
+function abortAndCleanup(stderr: string, tool: string): void {
   console.error("");
   console.error(`hook-codex: ${tool} failed: ${stderr.split("\n")[0] || "unknown error"}`);
 
-  // Best-effort: try to restore from backup. If we couldn't write to the file
-  // before, we can't write to it now either, but if some keys partially
-  // applied we want to at least try.
-  if (existsSync(BACKUP_INFO_PLIST)) {
-    try {
-      copyFileSync(BACKUP_INFO_PLIST, INFO_PLIST);
-      console.error(`hook-codex: restored Info.plist from backup`);
-    } catch (e) {
-      console.error(`hook-codex: could not restore Info.plist (${(e as Error).message})`);
-      console.error(`hook-codex: backup is at ${BACKUP_INFO_PLIST} for manual recovery`);
-    }
-  }
-
-  // If we made the backup THIS run and the patch never took effect, remove it
-  // so disable/uninstall don't think we hooked anything.
-  if (createdBackupThisRun && existsSync(BACKUP_INFO_PLIST)) {
-    try {
-      unlinkSync(BACKUP_INFO_PLIST);
-    } catch {
-      /* ignore */
-    }
-  }
+  // Best-effort surgical undo. If TCC denied us before, it'll deny us now.
+  spawnSync("/usr/libexec/PlistBuddy", ["-c", "Delete :LSEnvironment:CODEX_CLI_PATH", INFO_PLIST], {
+    encoding: "utf8",
+  });
 
   if (/Operation not permitted/i.test(stderr)) {
     printAppManagementHelp();
@@ -151,31 +137,24 @@ function printAppManagementHelp(): void {
 }
 
 function disableHook(): void {
-  if (existsSync(BACKUP_INFO_PLIST)) {
-    console.log(`=> Restoring Info.plist from backup ${BACKUP_INFO_PLIST}`);
-    try {
-      copyFileSync(BACKUP_INFO_PLIST, INFO_PLIST);
-    } catch (e) {
-      if (/Operation not permitted/i.test((e as Error).message)) {
-        console.error(`hook-codex: cannot write to ${INFO_PLIST}: ${(e as Error).message}`);
-        printAppManagementHelp();
-        process.exit(3);
-      }
-      throw e;
-    }
-  } else {
-    console.log("=> No backup found; removing LSEnvironment.CODEX_CLI_PATH");
-    const r = spawnSync("/usr/libexec/PlistBuddy", ["-c", "Delete :LSEnvironment:CODEX_CLI_PATH", INFO_PLIST], {
-      encoding: "utf8",
-    });
-    if (r.status !== 0 && /Operation not permitted/i.test(r.stderr ?? "")) {
-      console.error(`hook-codex: PlistBuddy: ${(r.stderr ?? "").trim()}`);
+  console.log("=> Removing LSEnvironment.CODEX_CLI_PATH");
+  const r = spawnSync(
+    "/usr/libexec/PlistBuddy",
+    ["-c", "Delete :LSEnvironment:CODEX_CLI_PATH", INFO_PLIST],
+    { encoding: "utf8" },
+  );
+  if (r.status !== 0) {
+    const stderr = (r.stderr ?? "").trim();
+    if (/Operation not permitted/i.test(stderr)) {
+      console.error(`hook-codex: PlistBuddy: ${stderr}`);
       printAppManagementHelp();
       process.exit(3);
     }
+    // "Does Not Exist" is fine — uninstall is idempotent.
   }
+
   console.log("=> Re-signing (ad-hoc)…");
-  const sign = spawnSync("codesign", ["--force", "--deep", "--sign", "-", CODEX_APP], { encoding: "utf8" });
+  const sign = spawnSync("codesign", ["--force", "--sign", "-", CODEX_APP], { encoding: "utf8" });
   if (sign.status !== 0) {
     if (/Operation not permitted/i.test(sign.stderr ?? "")) {
       printAppManagementHelp();
